@@ -1,0 +1,105 @@
+This directory contains some utility programs useful for 
+analyzing make dependencies.
+
+
+The first step is to generate the make database:
+$make -qpR > make.db
+
+This creates a rather large text file, about 0.5 GB. It can be
+used as is, in a text editor. It contains:
+* All variable definitions, with file/line number references
+* All make rules 
+
+========================================================
+
+If you want to see, visually, what the dependencies are, then 
+you can use make2dot.py:
+
+./make2dot.py < make.db > dot.db
+
+This creates a dot file with all the dependencies. While you can
+use dot to print this, beware. For an Android build, the graph
+will be so large that you will learn very little.
+
+==========================================================
+
+To get an excerpt of the dot graph, use showdep.py:
+
+./showdep.py < db.dot makefile_target
+
+This will produce a dot file containing the subgraph with only
+the specified makefile_target and its prerequisites, and the
+prerequisites of the prerequisites etc, recursively. With any
+luck, that graph will be small enough to print something
+sensible.
+
+The makefile target must be written *exactly* as it appears in
+the makefiles. If in doubt, look it up in make.db.
+There are some interesting options:
+-r : reverses the graph to show the targets that the specified
+     target is a prerequisite of (i.e. the graph "up" towards
+     the droid target)
+-i : print an indented list of dependencies instead of the
+     dot language. Useful for just displaying dependencies
+     in a terminal.
+-d <n>: Limits the recursion to <n> levels. Useful for reducing
+        the graph size.
+
+Some examples:
+To list what causes an android library to be installed:
+./showdep.py < db.dot -ri out/target/product/bxt_rvp/system/lib/libtcs.so
+
+To list 4 levels of dependencies of the library:
+./showdep.py < db.dot -i --depth 4 libtcs
+
+To list immediate dependencies of the built library:
+./showdep.py < db.dot -i --depth 1 out/target/product/bxt_rvp/obj/SHARED_LIBRARIES/libtcs_intermediates/LINKED/libtcs.so
+
+So what's with all the different targets in the above examples? For each
+module, Android defines a few targets:
+* A phony target which is just the MODULE_NAME. This target is convenient
+  when listing dependencies "downwards", towards source files, as one does
+  not need to specify any long path names. Note, however, that this target
+  is not linked into the dependency chain  "upwards", towards 
+  the droid target.
+* A target which builds the module in an intermediate directory.
+* A target which installs the module in its appropriate system directory
+  (system/lib for libraries, system/bin for executables, ...)
+
+If you get strange error messages from showdep, you might need
+to install the graphviz package. This should have been done on
+the build servers.
+Showdep needs the deps.gvpr file to work.
+
+===============================================================
+
+For simple visual browsing of the dependency tree, use makeview:
+
+makeview <target> -f make.db
+
+This will start a simple text-mode app which shows the immediate
+parents and children of one node.
+* Nodes marked U: are the parents
+* The node marked T: is the target
+* Nodes marked P: are the normal prerequisites
+* Nodes maked O: are order-only prerequisites
+
+To navigate the tree, use:
+*  up/down arrows to mark the next node you're interested in
+*  pg up/down for quicker navigation of long lists
+*  end/home for getting to the end/beginning of a long list
+*  enter to load a display where the selected node is the new target
+
+Press 'q' to quit.
+
+
+===========================================================
+The program mrwalker.py (make rule walker) is very similar to makeview.py.
+It is implemented using python-tk instead of curses. In case this package
+is not installed on your computer, first type:
+sudo apt-get install python-tk
+
+To use the program, click the mouse on the upper window (the one with
+the dependencies), and then use the keys (up/down, pgDn/pgUp, home/end, Enter)
+as with makeview.py.
+To quit, just close the window.

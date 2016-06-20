@@ -1,0 +1,41 @@
+/* ARGS are:
+   ARGV[0]: name of node to use as root of search
+   ARGV[1]: up|down. down = search in edge direction
+   ARGV[2]: graph|indent. graph => output dot graph,
+            indent => output indented text
+   ARGV[3]: an integer, indicating how deep to search the tree.
+            0 => infinite depth. */
+
+/*
+BEGIN {
+  int i, indent;
+  int seen[string];
+  void prInd(int cnt) {
+    for (i=0; i<cnt; i++) printf(" ");
+  }
+}
+*/
+
+BEG_G {
+/*  $tvtype = TV_prepostrev;*/
+  $tvtype = TV_prepostfwd;
+  $tvroot = node($,ARGV[0]);
+  graph_t g = graph("out","D");
+}
+
+
+N {
+  if ($.name==ARGV[0]) {
+    printf("FOUND %s\n",$.name);
+    exit(0);
+  }
+  else {
+    printf("Wrong node: %s\n",$.name);
+  }
+}
+
+
+END_G {
+  print("DONE")
+}
+

@@ -1,0 +1,56 @@
+/* ARGS are:
+   ARGV[0]: name of node to use as root of search
+   ARGV[1]: up|down. down = search in edge direction
+   ARGV[2]: graph|indent. graph => output dot graph,
+            indent => output indented text
+   ARGV[3]: an integer, indicating how deep to search the tree.
+            0 => infinite depth. */
+
+BEGIN {
+  int i, indent;
+  int seen[string];
+  void prInd(int cnt) {
+    for (i=0; i<cnt; i++) printf(" ");
+  }
+}
+
+BEG_G {
+  if (ARGV[1] == "up") {
+    $tvtype = TV_prepostrev;
+  }
+  else if (ARGV[1] == "down") {
+    $tvtype = TV_prepostfwd;
+  }
+  else {
+    print("Incorrect argument, should be up|down. Exiting.");
+    exit(-1);
+  }
+  $tvroot = node($,ARGV[0]);
+  graph_t g = graph("out","D");
+  int depth = ARGV[3];
+}
+
+N {
+  if (seen[$.name]) indent--;
+  else {
+    if (ARGV[2] == "indent") {
+      if ((depth == 0) || (indent <= depth)) {
+        prInd(indent);
+        print($.name);
+      }
+    }
+    seen[$.name] = 1;
+    indent++;
+  }
+  if (ARGV[0] == $.name) $tvroot = NULL;
+}
+
+E {
+  if (ARGV[2] == "graph") {
+    if ((depth == 0) || (indent <= depth)) clone(g,$);
+  }
+}
+
+END_G {
+if (ARGV[2] == "graph") $O = g;
+}
